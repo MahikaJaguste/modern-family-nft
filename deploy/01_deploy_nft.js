@@ -63,10 +63,10 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         subscriptionId,
         networkConfig[chainId]["gasLane"],
         networkConfig[chainId]["mintFee"],
-        networkConfig[chainId]["callbackGasLimit"],
+        // networkConfig[chainId]["callbackGasLimit"],
         tokenUris,
     ]
-    const randomIpfsNft = await deploy("RandomIpfsNft", {
+    const modernFamily = await deploy("ModernFamily", {
         from: deployer,
         args: arguments,
         log: true,
@@ -76,7 +76,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     // Verify the deployment
     if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
         log("Verifying...")
-        await verify(randomIpfsNft.address, arguments)
+        await verify(modernFamily.address, arguments)
     }
 }
 
@@ -97,4 +97,4 @@ async function handleTokenUris() {
     return tokenUris
 }
 
-module.exports.tags = ["all", "randomipfs", "main"]
+module.exports.tags = ["all", "modernFamily", "main"]
