@@ -1,0 +1,29 @@
+{
+  "name": "hardhat-starter-template",
+  "version": "1.0.0",
+  "description": "Basic folder structure to compile, test and deploy smart contracts using Hardhat.",
+  "main": "index.js",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "deploy": "npx hardhat run scripts/deploy.js",
+    "deploy-rinkeby": "npx hardhat run scripts/deploy.js --network rinkeby",
+    "verify-rinkeby": "npx hardhat run scripts/verify.js --network rinkeby"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.2",
+    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
+    "@nomiclabs/hardhat-etherscan": "^3.1.0",
+    "@openzeppelin/contracts": "^4.7.0",
+    "chai": "^4.3.6",
+    "ethers": "^5.6.9",
+    "hardhat": "^2.10.1",
+    "hardhat-deploy": "^0.11.11"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.1"
+  }
+}
