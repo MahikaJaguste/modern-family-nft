@@ -12,12 +12,6 @@ let tokenUris = [
     "ipfs://QmZYmH5iDbD6v3U2ixoVAjioSzvWJszDzYdbeCLquGSpVm",
 ]
 
-// const imageUris = [
-//     "ipfs://QmSsYRx3LpDAb1GZQm7zZ1AuHZjfbPkD6J7s9r41xu1mf8",
-//     "ipfs://QmYx6GsYAKnNzZ9A6NvEKV9nf1VaDzJrqDR23Y8YSkebLU",
-//     "ipfs://QmUPjADFGEKmfohdTaNcWhp7VGk26h5jXDA7v3VtTnTLcW",
-// ]
-
 const metadataTemplate = {
     name: "",
     description: "",
@@ -62,8 +56,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         vrfCoordinatorV2Address,
         subscriptionId,
         networkConfig[chainId]["gasLane"],
+        networkConfig[chainId]["callbackGasLimit"],
         networkConfig[chainId]["mintFee"],
-        // networkConfig[chainId]["callbackGasLimit"],
         tokenUris,
     ]
     const modernFamily = await deploy("ModernFamily", {

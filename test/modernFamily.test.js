@@ -1,107 +1,97 @@
-// const {setupUsers, setupUser} = require('./utils');
-// const { expect } = require("chai");
-// const { ethers, deployments, getNamedAccounts, getUnnamedAccounts } = require("hardhat");
+const {setupUsers, setupUser} = require('./utils');
+const { expect, anyUint } = require("chai");
+const { ethers, deployments, getNamedAccounts, getUnnamedAccounts } = require("hardhat");
+const { networkConfig, tokenUris } = require('../helper-hardhat-config');
 
-// async function setup () {
-//     // it first ensures the deployment is executed and reset (use of evm_snapshot for faster tests)
-//     await deployments.fixture(["Token"]);
+async function setup () {
+    // it first ensures the deployment is executed and reset (use of evm_snapshot for faster tests)
+    await deployments.fixture(["modernFamily", "mocks"]);
   
-//     // we get an instantiated contract in the form of a ethers.js Contract instance:
-//     const contracts = {
-//       Token: (await ethers.getContract('Token')),
-//     };
+    // we get an instantiated contract in the form of a ethers.js Contract instance:
+    const contracts = {
+      ModernFamily: (await ethers.getContract('ModernFamily')),
+      VRFCoordinatorV2Mock: (await ethers.getContract('VRFCoordinatorV2Mock')),
+    };
   
-//     // we get the tokenOwner
-//     const {tokenOwner} = await getNamedAccounts();
+    // we get the alice
+    const {deployer, alice} = await getNamedAccounts();
   
-//     // Get the unnammedAccounts (which are basically all accounts not named in the config,
-//     // This is useful for tests as you can be sure they have noy been given tokens for example)
-//     // We then use the utilities function to generate user objects
-//     // These object allow you to write things like `users[0].Token.transfer(....)`
-//     const users = await setupUsers(await getUnnamedAccounts(), contracts);
+    // Get the unnammedAccounts (which are basically all accounts not named in the config,
+    // This is useful for tests as you can be sure they have noy been given tokens for example)
+    // We then use the utilities function to generate user objects
+    // These object allow you to write things like `users[0].ModernFamily.transfer(....)`
+    const users = await setupUsers(await getUnnamedAccounts(), contracts);
 
-//     // finally we return the whole object (including the tokenOwner setup as a User object)
-//     return {
-//       ...contracts,
-//       users,
-//       tokenOwner: await setupUser(tokenOwner, contracts),
-//     };
-//   }
+    const chainId = network.config.chainId;
 
-// describe("Token contract", function() {
+    // finally we return the whole object (including the alice setup as a User object)
+    return {
+      ...contracts,
+      users,
+      deployer: await setupUser(deployer, contracts),
+      alice: await setupUser(alice, contracts),
+      chainId
+    };
+  }
 
-//   describe("Deployment", function () {
+describe("ModernFamily contract", function() {
 
-//     it("Should set the right owner", async function () {
-//       // before the test, we call the fixture function.
-//       const {Token} = await setup();
-//       const {tokenOwner} = await getNamedAccounts();
-//       expect(await Token.owner()).to.equal(tokenOwner);
-//     });
+  describe("Deployment", function () {
 
-//     it("Should assign the total supply of tokens to the owner", async function () {
-//       const {Token, tokenOwner} = await setup();
-//       const ownerBalance = await Token.balanceOf(tokenOwner.address);
-//       expect(await Token.totalSupply()).to.equal(ownerBalance);
-//     });
-//   });
+    it("Should set the initial values correctly", async function () {
+      // before the test, we call the fixture function.
+      const { ModernFamily, chainId, deployer } = await setup();
 
-//   describe("Transactions", function () {
-//     it("Should transfer tokens between accounts", async function () {
-//       const {Token, users, tokenOwner} = await setup();
-//       // Transfer 50 tokens from owner to users[0]
-//       await tokenOwner.Token.transfer(users[0].address, 50);
-//       const users0Balance = await Token.balanceOf(users[0].address);
-//       expect(users0Balance).to.equal(50);
+      expect(await ModernFamily.owner()).to.equal(deployer.address);
+      expect(await ModernFamily.getMintFee()).to.equal(networkConfig[chainId]["mintFee"])
+      expect(await ModernFamily.getCharacterTokenUri(0)).to.equal(tokenUris[0])
+      expect(await ModernFamily.getTokenCounter()).to.equal(0)
+    });
+  });
 
-//       // Transfer 50 tokens from users[0] to users[1]
-//       // We use .connect(signer) to send a transaction from another account
-//       await users[0].Token.transfer(users[1].address, 50);
-//       const users1Balance = await Token.balanceOf(users[1].address);
-//       expect(users1Balance).to.equal(50);
-//     });
+  describe("Only Owner", function () {
 
-//     it("Should fail if sender doesn’t have enough tokens", async function () {
-//       const {Token, users, tokenOwner} = await setup();
-//       const initialOwnerBalance = await Token.balanceOf(tokenOwner.address);
+    it("Should update mint fee correctly", async function () {
+      // before the test, we call the fixture function.
+      const { ModernFamily, chainId, deployer, alice } = await setup();
 
-//       // Try to send 1 token from users[0] (0 tokens) to owner (1000 tokens).
-//       // `require` will evaluate false and revert the transaction.
-//       await expect(users[0].Token.transfer(tokenOwner.address, 1)
-//       ).to.be.revertedWith("Not enough tokens");
+      await expect(alice.ModernFamily.updateMintFee(networkConfig[chainId]["mintFee"] + 1)).to.be.reverted;
+      await deployer.ModernFamily.updateMintFee(networkConfig[chainId]["mintFee"] + 1);
+      expect(await ModernFamily.getMintFee()).to.equal(networkConfig[chainId]["mintFee"] + 1);
+    });
 
-//       // Owner balance shouldn't have changed.
-//       expect(await Token.balanceOf(tokenOwner.address)).to.equal(
-//         initialOwnerBalance
-//       );
-//     });
+    it("Should withdraw funds correctly", async function () {
+      // before the test, we call the fixture function.
+      const { chainId, deployer, alice} = await setup();
 
-//     it("Should update balances after transfers", async function () {
-//       const {Token, users, tokenOwner} = await setup();
-//       const initialOwnerBalance = await Token.balanceOf(tokenOwner.address);
+      await expect(alice.ModernFamily.requestNFT({value:networkConfig[chainId]["mintFee"]}))
+      .to.changeEtherBalance(alice.address, "-".concat(networkConfig[chainId]["mintFee"]));
 
-//       // Transfer 100 tokens from owner to users[0].
-//       await tokenOwner.Token.transfer(users[0].address, 100);
+      await expect(alice.ModernFamily.withdraw()).to.be.reverted;
+      await expect(deployer.ModernFamily.withdraw())
+      .to.changeEtherBalance(deployer.address, networkConfig[chainId]["mintFee"]);
+    }); 
+  });
 
-//       // Transfer another 50 tokens from owner to users[1].
-//       await tokenOwner.Token.transfer(users[1].address, 50);
+  describe("Minting", function () {
 
-//       // Check balances.
-//       const finalOwnerBalance = await Token.balanceOf(tokenOwner.address);
-//       expect(finalOwnerBalance).to.equal(initialOwnerBalance - 150);
-
-//       const users0Balance = await Token.balanceOf(users[0].address);
-//       expect(users0Balance).to.equal(100);
-
-//       const users1Balance = await Token.balanceOf(users[1].address);
-//       expect(users1Balance).to.equal(50);
-//     });
-//   });
-// });
+    it("Should mint only if sufficient fee is paid", async function () {
+      // before the test, we call the fixture function.
+      const { ModernFamily, alice } = await setup();
+      await expect(alice.ModernFamily.requestNFT({value:1})).to.be.revertedWithCustomError(
+        ModernFamily,
+        "ModernFamily__InSufficientMintFee"
+      );
+    });
+ 
+    it("emits an event and kicks off a random word request", async function () {
+      const { ModernFamily, chainId, deployer } = await setup();
+      await expect(ModernFamily.requestNFT({value:networkConfig[chainId]["mintFee"]}))
+      .to.emit(ModernFamily, "NftRequested")
+      .withArgs(() =>true, deployer.address);
+    });
+  });
 
 
 
-// //  If you needed that contract to be associated to a specific signer, you can pass the address as the extra argument
-// // const users = await getUnnamedAccounts();
-// // const TokenAsUser0 = await ethers.getContract("Token", users[0]);
-
+});

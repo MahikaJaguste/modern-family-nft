@@ -26,10 +26,16 @@ const networkConfig = {
 const DECIMALS = "18"
 const INITIAL_PRICE = "200000000000000000000"
 const developmentChains = ["hardhat", "localhost"]
+let tokenUris = [
+    "ipfs://QmaVkBn2tKmjbhphU7eyztbvSQU5EXDdqRyXZtRhSGgJGo",
+    "ipfs://QmYQC5aGZu2PTH8XzbJrbDnvhj3gVs7ya33H9mqUNvST3d",
+    "ipfs://QmZYmH5iDbD6v3U2ixoVAjioSzvWJszDzYdbeCLquGSpVm",
+]
 
 module.exports = {
     networkConfig,
     developmentChains,
+    tokenUris,
     DECIMALS,
     INITIAL_PRICE
 }
